@@ -16,12 +16,15 @@ echo " =============================================================="
 echo ""
 
 ## modificare file di configurazione e creare il backup
-echo $log "setting rsnapshot_weekly as configuration file"
 cp /etc/rsnapshot_weekly /etc/rsnapshot.conf
+echo $log "setted rsnapshot_weekly as configuration file"
 
 # BACKUP_DISK=sda1
-log=""
+
 mount="mount -t cifs -o username=admin,password=nerinagrigetta1977"
+
+err=0
+log=""
 
 DIR[0]="//10.0.48.244/AEQ-LOG"
 loc[0]="/mnt/botte04/AEQ-LOG"
@@ -75,52 +78,67 @@ loc[22]="/mnt/botte02/Botte02_ALLOVIS"
 ## verificare che sda1 non è montato in /mnt
 
 ## aprire volume criptato
-echo $log "opening crypted /dev/sda1"
 cryptsetup luksOpen -d /home/pi/key /dev/sda1 sda1
+echo $log "crypted /dev/sda1 opened"
 
 ## verificare apertura volume
+sleep 5
 
 ## montare sda1 in /mnt
-echo $log "mounting /dev/mapper/sda1 in /mnt/BKPDISK"
 mount /dev/mapper/sda1 /mnt/BKPDISK
+echo $log "mounted /dev/mapper/sda1 in /mnt/BKPDISK"
 
 ## verificare montaggio partizione
+flagfile='/mnt/BKPDISK/weekly.aesbackup'
+if [ -e $flagFile ];
+then
 
 ## montare cartelle 
-i=0
-for dir in "${DIR[@]}";
-	do
-		echo $log "  mounting" $dir "in" ${loc[$i]};
-		$mount $dir ${loc[$i]};
-		i=$i+1;
-	done
-
+	i=0
+	for dir in "${DIR[@]}";
+		do
+			$mount $dir ${loc[$i]};
+			echo $log "  mounted" $dir "in" ${loc[$i]};
+			i=$i+1;
+			sleep 1
+		done
+	
 ## verificare cartelle di rete montate
-
+	
 ## -----------------------------------------------------------------------------
 ## ESEGUIRE BACKUP
-echo "[!]" "Backing up now! Please wait, it may take a very long time!"
-echo $log "For log watching please tailf /var/log/rsnapshot.log file."
-rsnapshot weekly
-echo $log "Backup ended."
+	echo "[!]" "Backing up now! Please wait, it may take a very long time!"
+	echo $log "For log watching please tailf /var/log/rsnapshot file."
+	rsnapshot weekly
+	echo $log "Backup ended."
 ## -----------------------------------------------------------------------------
-
+	
 ## smontare cartelle di backup
-for loc in "${loc[@]}";
-        do
-                echo $log "  unmounting" $loc; 
-                $umount $loc;
-        done
+	for loc in "${loc[@]}";
+        	do
+        	        umount $loc;
+       			echo $log "  unmounted" $loc;
+	        done
+else
+	echo "Flag File not found. It may means that backupdisk is not correct or not present."
+	err=$err+1
+fi
 
 ## smontare partizione /mnt/BKPDISK
-echo $log "unmounting /mnt/BKPDISK"
 umount /mnt/BKPDISK
+echo $log "unmounted /mnt/BKPDISK"
 
 ## chiudere volume criptato
-echo $log "closing crypted /dev/sda1"
 cryptsetup luksClose sda1
+echo $log "crypted /dev/sda1 closed"
 
 ## inviare notifica
-echo $log "AES Backup finished!"
+if [ $err -eq 0 ];
+then
+	echo $log "AES Backup finished!"
+else
+	echo $log "Some ERROR occurred! no bakcup done. Exiting."
+fi
+
 
 exit
