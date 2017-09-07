@@ -4,26 +4,67 @@
 # ------------------------ ALLOVIS ENGINEERING SERVICES ------------------------
 #                                 Torino, Italy
 # ------------------------------------------------------------------------------
-# Backup script for raspberry PI
+# BackuPi configuration
+# ==============================================================================
+
+## BACKUPI CONFIGURATION
+# Bakcup type:
+TYPE="monthly"
+# TYPE="weekly"
+
+# Backupi log file: 
+LOGFILE="aes-backupi.log"
+
+
+
+## RSNAPSHOT CONFIGURATION
+# Rsnapshot log file:
+RS_LOGFILE="/var/log/rsnapshot.log"
+
+# Rsnapshot snapshot_root:
+RS_SNAPSHOT_ROOT="/mnt/BKPDISK/AESBACKUP"
+
+# Rsnapshot history of backup to preserve:
+RS_HISTORY="12"
+
+
+## BACKUPS CONFIGURATION
+# --->>> to evaluate if import a csv.
+
+# backup 	$LOCAL_PATH 			$BACKUP_PATH 			$REMOTE_PATH 			$MOUNT_STRING
+# backup 	/mnt/botte04_AEQ-LOG 	AES-botte04_AEQ-LOG 	//10.0.48.244/AEQ-LOG	"-t cifs -o username=admin,password=nerinagrigetta1977"
+
+
+
+
+# ==============================================================================
+# ------------------------ ALLOVIS ENGINEERING SERVICES ------------------------
+#                                 Torino, Italy
+# ------------------------------------------------------------------------------
+# BackuPi - a backup script for raspberry PI
 # ------------------------------------------------------------------------------
 # created on 07/07/2017 by DE
 # ==============================================================================
 
+# LOG on file:
+
+LOG="tee -a /var/log/"$LOGFILE
+log=""
+
+
 echo " =============================================================="
 echo " ---------------- ALLOVIS ENGINEERING SERVICES ----------------"
 echo "  Backup script for raspberry PI - created on 07/07/2017 by DE"
-echo " =============================================================="
-echo ""
+echo " ==============================================================" | $LOG
+echo " $TYPE backup start: $(date)" | $LOG
+echo " --------------------------------------------------------------" | $LOG
 
 ## modificare file di configurazione e creare il backup
-cp /etc/rsnapshot_monthly /etc/rsnapshot.conf
-echo $log "setted rsnapshot_monthly as configuration file"
+echo $log "setting rsnapshot_$TYPE as configuration file" | $LOG
+cp /etc/rsnapshot_$TYPE /etc/rsnapshot.conf
 
 # BACKUP_DISK=sda1
-
 mount="mount -t cifs -o username=admin,password=nerinagrigetta1977"
-
-log=""
 
 DIR[0]="//10.0.48.244/AEQ-LOG"
 loc[0]="/mnt/botte04/AEQ-LOG"
@@ -77,14 +118,14 @@ loc[22]="/mnt/botte02/Botte02_ALLOVIS"
 ## verificare che sda1 non è montato in /mnt
 
 ## aprire volume criptato
+echo $log "opening crypted /dev/sda1" | $LOG
 cryptsetup luksOpen -d /home/pi/key /dev/sda1 sda1
-echo $log "crypted /dev/sda1 opened"
 
 ## verificare apertura volume
 
 ## montare sda1 in /mnt
+echo $log "mounting /dev/mapper/sda1 in /mnt/BKPDISK" | $LOG
 mount /dev/mapper/sda1 /mnt/BKPDISK
-echo $log "mounted /dev/mapper/sda1 in /mnt/BKPDISK"
 
 ## verificare montaggio partizione
 
@@ -92,8 +133,8 @@ echo $log "mounted /dev/mapper/sda1 in /mnt/BKPDISK"
 i=0
 for dir in "${DIR[@]}";
 	do
+		echo $log "  mounting" $dir "in" ${loc[$i]} | $LOG;
 		$mount $dir ${loc[$i]};
-		echo $log "  mounted" $dir "in" ${loc[$i]};
 		i=$i+1;
 	done
 
@@ -101,28 +142,30 @@ for dir in "${DIR[@]}";
 
 ## -----------------------------------------------------------------------------
 ## ESEGUIRE BACKUP
-echo "[!]" "Backing up now! Please wait, it may take a very long time!"
-echo $log "For log watching please tailf /var/log/rsnapshot file."
-rsnapshot monthly
-echo $log "Backup ended."
+
+
+echo "[!]" "Backing up now! Please wait, it may take a very long time!" | $LOG
+echo $log "For log watching please tailf /var/log/rsnapshot.log file." | $LOG
+rsnapshot $TYPE
+echo $log "Backup ended." | $LOG
 ## -----------------------------------------------------------------------------
 
 ## smontare cartelle di backup
 for loc in "${loc[@]}";
         do
+                echo $log "  unmounting" $loc | $LOG; 
                 $umount $loc;
-                echo $log "  unmounted" $loc; 
         done
 
 ## smontare partizione /mnt/BKPDISK
+echo $log "unmounting /mnt/BKPDISK" | $LOG
 umount /mnt/BKPDISK
-echo $log "unmounted /mnt/BKPDISK"
 
 ## chiudere volume criptato
+echo $log "closing crypted /dev/sda1" | $LOG
 cryptsetup luksClose sda1
-echo $log "crypted /dev/sda1 closed"
 
-## inviare notifica 
-echo $log "AES Backup finished!"
+## inviare notifica
+echo $log "AES Backupi finished!" | $LOG
 
 exit
