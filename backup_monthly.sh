@@ -22,6 +22,7 @@ echo $log "setted rsnapshot_monthly as configuration file"
 
 mount="mount -t cifs -o username={USERNAME},password={PASSWORD}"
 
+err=0
 log=""
 
 DIR[0]="/{NETWORKLOCATION}/{DIRECTORYNAME}"
@@ -46,7 +47,9 @@ mount /dev/mapper/sda1 /mnt/BKPDISK
 echo $log "mounted /dev/mapper/sda1 in /mnt/BKPDISK"
 
 ## verificare montaggio partizione
-sleep 5
+flagfile='/mnt/BKPDISK/weekly.edackupi'
+if [ -e $flagFile ];
+then
 
 ## montare cartelle 
 i=0
@@ -62,18 +65,22 @@ for dir in "${DIR[@]}";
 
 ## -----------------------------------------------------------------------------
 ## ESEGUIRE BACKUP
-echo "[!]" "Backing up now! Please wait, it may take a very long time!"
-echo $log "For log watching please tailf /var/log/rsnapshot file."
-rsnapshot monthly
-echo $log "Backup ended."
+	echo "[!]" "Backing up now! Please wait, it may take a very long time!"
+	echo $log "For log watching please tailf /var/log/rsnapshot file."
+	rsnapshot monthly
+	echo $log "Backup ended."
 ## -----------------------------------------------------------------------------
 
 ## smontare cartelle di backup
-for loc in "${loc[@]}";
-        do
-                umount $loc;
-                echo $log "  unmounted" $loc; 
-        done
+	for loc in "${loc[@]}";
+        	do
+                	umount $loc;
+                	echo $log "  unmounted" $loc; 
+        	done
+else
+	echo "Flag File not found. It may means that backupdisk is not correct or not present."
+	err=$err+1
+fi
 
 ## smontare partizione /mnt/BKPDISK
 umount /mnt/BKPDISK
@@ -84,6 +91,12 @@ cryptsetup luksClose sda1
 echo $log "crypted /dev/sda1 closed"
 
 ## inviare notifica 
-echo $log "EDBackuPi finished!"
+if [ $err -eq 0 ];
+then
+	echo $log "EDBackuPi finished!"
+else
+	echo $log "Some ERROR occurred! no bakcup done. Exiting."
+fi
+
 
 exit
