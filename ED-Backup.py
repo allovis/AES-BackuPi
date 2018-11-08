@@ -151,7 +151,7 @@ with open(collectionFile, 'r') as f:
 checkdirectories(localDir)
 
 # execute sh script
-debug('- calling AES-BackuPi sh script ----------------------------')
+debug('- calling EDBackuPi sh script ----------------------------')
 # subprocess.call('./' + shScriptFile)
 debug('------------------------------------------------------------')
 
@@ -164,5 +164,4 @@ checkdiskstatus_3()
 # delete PID
 os.remove(pidFile)
 debug('deleted PID file')
-log('AES-BackuPi successfully completed ' + backupCase + ' backup!')
-
+log('EDBackuPi successfully completed ' + backupCase + ' backup!')
