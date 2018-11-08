@@ -20,7 +20,7 @@ echo $log "setted rsnapshot_monthly as configuration file"
 
 # BACKUP_DISK=sda1
 
-mount="mount -t cifs -o username=admin,password=nerinagrigetta1977"
+mount="mount -t cifs -o username={USERNAME},password={PASSWORD}"
 
 log=""
 
