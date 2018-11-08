@@ -74,8 +74,8 @@ then
 ## smontare cartelle di backup
 	for loc in "${loc[@]}";
         	do
-        	        umount $loc;
-       			echo $log "  unmounted" $loc;
+			umount $loc;
+			echo $log "  unmounted" $loc;
 	        done
 else
 	echo "Flag File not found. It may means that backupdisk is not correct or not present."
